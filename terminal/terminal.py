@@ -24,10 +24,12 @@ def main():
             #*Cadastrar pratos e atualizar preços
             case 1:
                 nome = console.input("Nome do prato: ")
+                descricao = console.input("Escreva a descrição do produto: ")
+                tag = console.input("Categoria do prato. Separe por virgula',' Exemplo 'massas, carnes, etc...': ")
                 preco = console.input("Preço: ")
                 tempo_preparo = console.input("Tempo máximo de preparo: ")
                 img = console.input("Digite o nome do arquivo de imagem. Exemplo 'img.png': ")
-                lista_pratos.append(criar_prato(nome, preco, tempo_preparo))
+                lista_pratos.append(criar_prato(nome, descricao, tag, preco, tempo_preparo, img))
                 console.print("[bold green]Prato criado com sucesso.[/bold green]")
             #*editar pratos
             case 2:
