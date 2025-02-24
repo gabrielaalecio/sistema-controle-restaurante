@@ -13,10 +13,65 @@ Posso cadastrar clientes, mostrar nossos produtos, realizar pedidos entre outras
 
 async def echo(update: Update, context) -> None:
     user_id = update.message.from_user.id
+    mensagem = update.message.text
 
     if user_id in cadastro_estado:
         estado = cadastro_estado[user_id]["estado"]
 
+        if estado == "email":
+            cadastro_estado[user_id]["email"] = mensagem
+            cadastro_estado[user_id]["estado"] = "email_cod"
+            await update.message.reply_text("Enviamos um código para o seu email, digite aqui para confirmar seu email: ")
+
+            ###ENVIAR EMAIL
+
+        elif estado == "email_cod":
+            
+            await update.message.reply_text("Agora digite sua nome: ")
+
+        elif estado == "nome":
+            cadastro_estado[user_id]["nome"] = mensagem
+            cadastro_estado[user_id]["estado"] = "idade"
+            await update.message.reply_text("Agora digite sua idade: ")
+
+        elif estado == "idade":
+            cadastro_estado[user_id]["idade"] = mensagem
+            cadastro_estado[user_id]["estado"] = "cpf"
+            await update.message.reply_text("Digite o seu cpf: ")
+
+        elif estado == "cpf":
+            cadastro_estado[user_id]["cpf"] = mensagem
+            cadastro_estado[user_id]["estado"] = "endereco_cep"
+            await update.message.reply_text("Vamos precisar do seu endeço, digite seu cep: ")
+
+        elif estado == "endereco_cep":
+            cadastro_estado[user_id]["endereco"] = {"cep":mensagem}
+            cadastro_estado[user_id]["estado"] = "endereco_bairro"
+            await update.message.reply_text("Agora digite seu bairro: ")
+
+        elif estado == "endereco_bairro":
+            cadastro_estado[user_id]["endereco"] = {"bairro":mensagem}
+            cadastro_estado[user_id]["estado"] = "endereco_rua"
+            await update.message.reply_text("Agora digite o nome de sua rua: ")
+
+        elif estado == "endereco_rua":
+            cadastro_estado[user_id]["endereco"] = {"rua":mensagem}
+            cadastro_estado[user_id]["estado"] = "endereco_num"
+            await update.message.reply_text("Agora digite o numero da sua rua: ")
+
+        elif estado == "endereco_num":
+            cadastro_estado[user_id]["endereco"] = {"numero":mensagem}
+            cadastro_estado[user_id]["estado"] = "endereco_complemento"
+            await update.message.reply_text("Agora digite complemento. Exemplo (res oliveira, apt 107, bloco b): ")
+
+        elif estado == "endereco_complemento":
+            cadastro_estado[user_id]["endereco"] = {"complemento":mensagem}
+
+            #####SALVAR
+
+            # Remove do estado do cadastro (finalizou)
+            del cadastro_estado[user_id]
+            await update.message.reply_text("Cadastro concluído com sucesso! ✅")
 
 
     await update.message.reply_text(f"Olá, não entendi oque você disse. Use /ajuda ou /comandos para eu poder melhor te auxiliar",reply_to_message_id=update.message.message_id)
