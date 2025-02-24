@@ -1,5 +1,5 @@
 from telegram import Update,InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler,filters, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler,filters, CallbackContext,CallbackQueryHandler
 import json
 from secrets import token_hex
 from enviar_email import *
@@ -51,8 +51,8 @@ async def echo(update: Update, context) -> None:
                 cadastro_estado[user_id]["estado"] = "email_cod"
                 await update.message.reply_text("Código confirmado!\nAgora digite sua nome: ")
             else:
-                print()
-                #### Cancelar cadastro
+                await update.message.reply_text("O código informado está incorreto!\nDigite ou clique em /cadastro para recomeçar.")
+                del cadastro_estado[user_id] #cancela cadastro
 
         elif estado == "nome":
             cadastro_estado[user_id]["nome"] = mensagem
@@ -91,10 +91,34 @@ async def echo(update: Update, context) -> None:
 
         elif estado == "endereco_complemento":
             cadastro_estado[user_id]["endereco"] = {"complemento":mensagem}
+            cadastro_estado[user_id]["estado"] = "confirmar"
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ CONFIRMAR", callback_data=f"confirmar_{user_id}"),
+                    InlineKeyboardButton("❌ CANCELAR", callback_data=f"cancelar_{user_id}")
+                ]
+            ]
+
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            await update.message.reply_text(f"""
+            Estamos finalizando seu cadastro, para finalizar, confirme o seu cadastro:
+            Email: {cadastro_estado[user_id]["email"]}
+            Nome: {cadastro_estado[user_id]["nome"]}
+            Idade: {cadastro_estado[user_id]["Idade"]}
+            CPF: {cadastro_estado[user_id]["cpf"]}
+            Bairro: {cadastro_estado[user_id]["bairro"]}
+            Rua: {cadastro_estado[user_id]["Rua"]}
+            Numero: {cadastro_estado[user_id]["numero"]}
+            Complemento: {cadastro_estado[user_id]["complemento"]}
+
+            Clique em uma opção abaixo:""",reply_markup)
 
             #####SALVAR
 
             # Remove do estado do cadastro (finalizou)
+
             del cadastro_estado[user_id]
             await update.message.reply_text("Cadastro concluído com sucesso! ✅")
 
@@ -112,6 +136,20 @@ Estes são os comandos (digite ou clique):
 /comandos
 /ajuda
 """)
+
+async def button_callback(update: Update, context: CallbackContext) -> None:
+
+    query = update.callback_query  
+    await query.answer()  # Confirma o recebimento para evitar carregamento infinito
+
+    new_text = ""
+    if query.data == "cadastro_yes":
+        new_text = "Você escolheu: Sim ✅ para o cadastro"
+    elif query.data == "cadastro_no":
+        new_text = "Você escolheu: Não ❌ para o cadastro"
+
+    # ⚡️ Edita a mensagem original para remover os botões e mostrar a escolha
+    await query.message.edit_text(new_text)
 
 async def cadastro(update: Update, context) -> None:
     user_id = update.message.from_user.id
@@ -151,6 +189,7 @@ def main():
     application.add_handler(CommandHandler("comandos", comandos))
     application.add_handler(CommandHandler("cadastro", cadastro))
     application.add_handler(MessageHandler(filters.TEXT, echo)) 
+    application.add_handler(CallbackQueryHandler(button_callback))
 
  # Inicia o bot
     print("Bot está rodando...")
