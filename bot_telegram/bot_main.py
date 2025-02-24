@@ -15,7 +15,9 @@ Posso cadastrar clientes, mostrar nossos produtos, realizar pedidos entre outras
 
 async def echo(update: Update, context) -> None:
     user_id = update.message.from_user.id
+    user_name =update.message.chat.first_name
     mensagem = update.message.text
+    
 
     if user_id in cadastro_estado:
         estado = cadastro_estado[user_id]["estado"]
@@ -26,12 +28,13 @@ async def echo(update: Update, context) -> None:
             await update.message.reply_text("Enviamos um código para o seu email, digite aqui para confirmar seu email: ")
 
             codigo = token_hex(4)
+            cadastro_estado[user_id]["codigo"] = codigo
 
             titulo = "Confirmação de Email"
             corpo = f"""
             <thml>
             <body>
-            <p>Olá!
+            <p>Olá {user_name}!
             Este é o seu código de confirmação.</p>
             <h2><b>[{codigo}]</b></h2>
 
@@ -44,8 +47,12 @@ async def echo(update: Update, context) -> None:
             enviar_email(mensagem, titulo, corpo)
 
         elif estado == "email_cod":
-            
-            await update.message.reply_text("Agora digite sua nome: ")
+            if mensagem == cadastro_estado[user_id]["codigo"]:
+                cadastro_estado[user_id]["estado"] = "email_cod"
+                await update.message.reply_text("Código confirmado!\nAgora digite sua nome: ")
+            else:
+                print()
+                #### Cancelar cadastro
 
         elif estado == "nome":
             cadastro_estado[user_id]["nome"] = mensagem
