@@ -1,6 +1,8 @@
 from telegram import Update,InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler,filters, CallbackContext
 import json
+from secrets import token_hex
+from enviar_email import *
 
 async def start(update: Update, context) -> None:
     await update.message.reply_text(f"Olá {update.message.chat.first_name}.\nSeja bem vindo ao BUG DO SABOR, sou um chat-bot e estou aqui para te ajudar com o seu pedido!\nQualquer dúvida, digite ou clique /ajuda")
@@ -23,7 +25,23 @@ async def echo(update: Update, context) -> None:
             cadastro_estado[user_id]["estado"] = "email_cod"
             await update.message.reply_text("Enviamos um código para o seu email, digite aqui para confirmar seu email: ")
 
-            ###ENVIAR EMAIL
+            codigo = token_hex(4)
+
+            titulo = "Confirmação de Email"
+            corpo = f"""
+            <thml>
+            <body>
+            <p>Olá!
+            Este é o seu código de confirmação.</p>
+            <h2><b>[{codigo}]</b></h2>
+
+            <p>Atenciosamente,
+            Equipe Bug do Sabor.</p>
+            </body>
+            </html>
+            """
+
+            enviar_email(mensagem, titulo, corpo)
 
         elif estado == "email_cod":
             
