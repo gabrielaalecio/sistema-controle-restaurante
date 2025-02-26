@@ -256,7 +256,9 @@ async def cadastro(update: Update, context) -> None:
 
 
     
-file = 'clientes.json'
+file = 'bot_telegram/clientes.json'
+file_pratos = 'terminal/pratos.json'
+
 try:
     with open(file, "r") as arquivo:
         conteudo = arquivo.read().strip()
