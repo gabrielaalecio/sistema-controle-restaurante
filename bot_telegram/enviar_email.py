@@ -11,9 +11,7 @@ def enviar_email(destinatario, assunto, corpo):
     msg["From"] = remetente
     msg["To"] = destinatario
     msg["Subject"] = assunto
-    msg.attach(MIMEText(corpo, "plain"))
-
-    msg.add_alternative(corpo, subtype='html')
+    msg.attach(MIMEText(corpo, "html"))
 
     try:
         contexto = ssl.create_default_context()
