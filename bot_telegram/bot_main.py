@@ -55,7 +55,7 @@ async def echo(update: Update, context) -> None:
 
             titulo = "Confirmação de Email"
             corpo = f"""
-            <thml>
+            <html>
             <body>
             <p>Olá {user_name}!
             Este é o seu código de confirmação.</p>
@@ -80,14 +80,14 @@ async def echo(update: Update, context) -> None:
                 cadastro_estado[user_id]["estado"] = "nome"
                 await update.message.reply_text("Código confirmado!\nAgora digite sua nome: ")
             else:
-                await update.message.reply_text("O código informado está incorreto!\nDigite ou clique em /cadastro para recomeçar.")
+                await update.message.reply_text("O código informado está incorreto!\nDigite/clique em /cadastro para recomeçar.")
                 del cadastro_estado[user_id] #cancela cadastro
 
             return None
 
         elif estado == "nome":
             if validar.string_vazia(mensagem):
-                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente ou utilize /cancelar para cancelar o cadastro.")
+                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente o nome ou  digite/clique em /cancelar_cadastro.")
                 return None                
 
             cadastro_estado[user_id]["nome"] = mensagem.upper()
@@ -96,14 +96,18 @@ async def echo(update: Update, context) -> None:
             return None
 
         elif estado == "idade":
-            #validar idade
+            if not validar.idade(mensagem):
+                await update.message.reply_text("A idade digitada está ínválida! digite novamente a idade ou digite/clique /cancelar_cadastro.")
+                return None
             cadastro_estado[user_id]["idade"] = mensagem
             cadastro_estado[user_id]["estado"] = "cpf"
             await update.message.reply_text("Digite o seu cpf: ")
             return None
 
         elif estado == "cpf":
-            #validar cpf
+            if not validar.cpf(mensagem):
+                await update.message.reply_text("O CPF digitado está ínválido! digite novamente o CPF ou digite/clique /cancelar_cadastro.")
+
             cadastro_estado[user_id]["cpf"] = mensagem
             cadastro_estado[user_id]["estado"] = "endereco_cep"
             await update.message.reply_text("Vamos precisar do seu endereço, digite seu cep: ")
