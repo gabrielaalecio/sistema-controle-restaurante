@@ -5,6 +5,25 @@ from secrets import token_hex
 from enviar_email import *
 import validar
 
+def arquivo_get():
+    try:
+        with open(file,"r") as arquivo:
+            dados = json.load(arquivo)
+        return dados
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Erro na abertura de arquivo")
+        return None
+
+def  arquivo_post(dado):
+    try:
+        dados = arquivo_get()
+        dados.append(dado)
+        with open(file, "w") as arquivo:
+            json.dump(dados, arquivo)
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Erro na abertura de arquivo")
+        return None
 
 async def start(update: Update, context) -> None:
     await update.message.reply_text(f"Olá {update.message.chat.first_name}.\nSeja bem vindo ao BUG DO SABOR, sou um chat-bot e estou aqui para te ajudar com o seu pedido!\nQualquer dúvida, digite ou clique /ajuda")
@@ -18,7 +37,7 @@ Posso cadastrar clientes, mostrar nossos produtos, realizar pedidos entre outras
 async def echo(update: Update, context) -> None:
     user_id = update.message.from_user.id
     user_name =update.message.chat.first_name.upper()
-    mensagem = update.message.text.upper()
+    mensagem = update.message.text
     
 
     if user_id in cadastro_estado:
@@ -52,9 +71,11 @@ async def echo(update: Update, context) -> None:
             return None
 
         elif estado == "email_cod":
-            print(cadastro_estado[user_id["codigo"]])
-            print(mensagem)
+            print(type(cadastro_estado[user_id]["codigo"]))
+            print(type(mensagem))
             if mensagem == cadastro_estado[user_id]["codigo"]:
+                del cadastro_estado[user_id]["codigo"]
+                print (cadastro_estado[user_id])
                 cadastro_estado[user_id]["estado"] = "nome"
                 await update.message.reply_text("Código confirmado!\nAgora digite sua nome: ")
             else:
@@ -68,7 +89,7 @@ async def echo(update: Update, context) -> None:
                 await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None                
 
-            cadastro_estado[user_id]["nome"] = mensagem
+            cadastro_estado[user_id]["nome"] = mensagem.upper()
             cadastro_estado[user_id]["estado"] = "idade"
             await update.message.reply_text("Agora digite sua idade: ")
             return None
@@ -84,14 +105,14 @@ async def echo(update: Update, context) -> None:
             #validar cpf
             cadastro_estado[user_id]["cpf"] = mensagem
             cadastro_estado[user_id]["estado"] = "endereco_cep"
-            await update.message.reply_text("Vamos precisar do seu endeço, digite seu cep: ")
+            await update.message.reply_text("Vamos precisar do seu endereço, digite seu cep: ")
             return None
 
         elif estado == "endereco_cep":
             if validar.string_vazia(mensagem):
                 await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
-            cadastro_estado[user_id]["endereco"] = {"cep":mensagem}
+            cadastro_estado[user_id]["endereco"]=({"cep":mensagem})
             cadastro_estado[user_id]["estado"] = "endereco_bairro"
             await update.message.reply_text("Agora digite seu bairro: ")
             return None
@@ -100,7 +121,7 @@ async def echo(update: Update, context) -> None:
             if validar.string_vazia(mensagem):
                 await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
-            cadastro_estado[user_id]["endereco"] = {"bairro":mensagem}
+            cadastro_estado[user_id]["endereco"].update({"bairro":mensagem.upper()})
             cadastro_estado[user_id]["estado"] = "endereco_rua"
             await update.message.reply_text("Agora digite o nome de sua rua: ")
             return None
@@ -109,25 +130,25 @@ async def echo(update: Update, context) -> None:
             if validar.string_vazia(mensagem):
                 await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
-            cadastro_estado[user_id]["endereco"] = {"rua":mensagem}
+            cadastro_estado[user_id]["endereco"].update({"rua":mensagem.upper()})
             cadastro_estado[user_id]["estado"] = "endereco_num"
-            await update.message.reply_text("Agora digite o numero da sua rua: ")
+            await update.message.reply_text("Agora digite o numero da sua casa: ")
             return None
 
         elif estado == "endereco_num":
             if validar.string_vazia(mensagem):
                 await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
-            cadastro_estado[user_id]["endereco"] = {"numero":mensagem}
+            cadastro_estado[user_id]["endereco"].update({"numero":mensagem})
             cadastro_estado[user_id]["estado"] = "endereco_complemento"
-            await update.message.reply_text("Agora digite complemento. Exemplo (res oliveira, apt 107, bloco b): ")
+            await update.message.reply_text("Digite o complemento. Exemplo(res oliveira, apt 107, bloco b): ")
             return None
 
         elif estado == "endereco_complemento":
             if validar.string_vazia(mensagem):
                 await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
-            cadastro_estado[user_id]["endereco"] = {"complemento":mensagem}
+            cadastro_estado[user_id]["endereco"].update({"complemento":mensagem.upper()})
             cadastro_estado[user_id]["estado"] = "confirmar"
 
             keyboard = [
@@ -143,21 +164,14 @@ async def echo(update: Update, context) -> None:
             Estamos finalizando seu cadastro, para finalizar, confirme o seu cadastro:
             Email: {cadastro_estado[user_id]["email"]}
             Nome: {cadastro_estado[user_id]["nome"]}
-            Idade: {cadastro_estado[user_id]["Idade"]}
+            Idade: {cadastro_estado[user_id]["idade"]}
             CPF: {cadastro_estado[user_id]["cpf"]}
-            Bairro: {cadastro_estado[user_id]["bairro"]}
-            Rua: {cadastro_estado[user_id]["Rua"]}
-            Numero: {cadastro_estado[user_id]["numero"]}
-            Complemento: {cadastro_estado[user_id]["complemento"]}
+            Bairro: {cadastro_estado[user_id]["endereco"]["bairro"]}
+            Rua: {cadastro_estado[user_id]["endereco"]["rua"]}
+            Numero: {cadastro_estado[user_id]["endereco"]["numero"]}
+            Complemento: {cadastro_estado[user_id]["endereco"]["complemento"]}""")
 
-            Clique em uma opção abaixo:""",reply_markup)
-
-            #####SALVAR
-
-            # Remove do estado do cadastro (finalizou)
-
-            del cadastro_estado[user_id]
-            await update.message.reply_text("Cadastro concluído com sucesso! ✅")
+            await update.message.reply_text("Clique em uma opção abaixo:", reply_markup=reply_markup)
             return None
 
 
@@ -178,46 +192,59 @@ Estes são os comandos (digite ou clique):
 async def button_callback(update: Update, context: CallbackContext) -> None:
 
     query = update.callback_query  
+    user_id = update.callback_query.from_user.id
     await query.answer()  # Confirma o recebimento para evitar carregamento infinito
 
     new_text = ""
-    if query.data == "cadastro_yes":
+    if query.data == f"cadastro_{user_id}":
         new_text = "Você escolheu: Sim ✅ para o cadastro"
-    elif query.data == "cadastro_no":
+        arquivo_post(cadastro_estado[user_id]) #salvo o cadastro caso o usuario queira
+        del cadastro_estado[user_id]
+
+    elif query.data == f"cadastro_{user_id}":
         new_text = "Você escolheu: Não ❌ para o cadastro"
+        del cadastro_estado[user_id]
 
     # ⚡️ Edita a mensagem original para remover os botões e mostrar a escolha
     await query.message.edit_text(new_text)
 
 async def cadastro(update: Update, context) -> None:
     user_id = update.message.from_user.id
-    try:
-        with open(file, "r") as arquivo:
-            conteudo = arquivo.read().strip()  # Remove espaços e quebras de linha extras
-            if not conteudo:  # Se o arquivo estiver vazio, inicializa um JSON válido
-                clientes = {"id": []}
-            else:
-                clientes = json.loads(conteudo)  # Carrega o JSON
+    dados = arquivo_get()
+    if user_id in dados:
+        await update.message.reply_text("Você ja é um de nossos clientes cadastrados.\nCaso deseja cancelar o seu cadastro, digite ou clique em /cancelar_cadastro.")
 
-        if user_id in clientes.get('id', []):
-            await update.message.reply_text("Você já é um usuário cadastrado!")
-            return None
-
-    except (FileNotFoundError, json.JSONDecodeError):
-        await update.message.reply_text(
-            f"Desculpe-me {update.message.chat.first_name}. Houve um erro inesperado. "
-            "Tente novamente! Caso o problema persista, envie um e-mail para nossa equipe."
-        )
-        return None
-    
-    if  user_id in cadastro_estado:
-        await update.message.reply_text("Você está no processo de cadastro. Conclua ou cancele com /cancelar_cadastro para continuar.")
-        return
     
     cadastro_estado[user_id] = {"estado": "email"}
     await update.message.reply_text("Digite seu e-mail:")
+
+
     
 file = 'clientes.json'
+try:
+    with open(file, "r") as arquivo:
+        conteudo = arquivo.read().strip()
+
+    if not conteudo:  # Se estiver vazio, cria um novo JSON válido
+        print(f"O arquivo {file} está vazio. Criando um novo...")
+        clientes = [0]
+        with open(file, "w") as arquivo:
+            json.dump(clientes, arquivo)
+    else:
+        print("Arquivo carregado com sucesso:")
+
+except FileNotFoundError:
+    print(f"O arquivo {file} não existe. Criando um novo...")
+    clientes = [0]
+    with open(file, "w") as arquivo:
+        json.dump(clientes, arquivo)
+
+except json.JSONDecodeError:
+    print(f"O arquivo {file} está corrompido! Criando um novo...")
+    clientes = [0]
+    with open(file, "w") as arquivo:
+        json.dump(clientes, arquivo)
+
 cadastro_estado = {} #guarda a informação sobre qual etapa de cadastro o  usuário se encontra
 
 # Configuração e execução do bot
