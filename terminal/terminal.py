@@ -8,7 +8,7 @@ import os
 console = Console()
 
 def main():
-    arquivo = "terminal\pratos.json"
+    arquivo = "foto-pratos\image.png"
     while True:
         lista_pratos = carregar_dados(arquivo)
         menu_inicial = Panel("1. Cadastrar pratos.\n2. Editar pratos.\n3. Gerenciar pedidos e status.\n4. Emitir relatórios de vendas.\n5. Sair.", title="Menu")
@@ -26,11 +26,18 @@ def main():
                     descricao = console.input("Escreva a descrição do produto: ")
                     tag = console.input("Categoria do prato. Separe por virgula ',' Exemplo 'massas, carnes, etc...': ")
                     preco = console.input("Preço: ")
-                    if not verificar_preco(preco):
+                    if not verificar_decimal(preco):
                         console.print("Preço inválido!")
                         break
                     tempo_preparo = console.input("Tempo máximo de preparo em minutos: ")
+                    if not verificar_decimal(tempo_preparo):
+                        console.print("Tempo inválido!")
                     img = console.input("Digite o nome do arquivo de imagem. Exemplo 'img.png': ")
+                    try:
+                        open(img, 'r')
+                    except:
+                        console.print("[bold red]Imagem não encontrada![/bold red]")
+                        break
                     lista_pratos.append(criar_prato(nome, descricao, tag, preco, tempo_preparo, img))
                     console.print("[bold green]Prato criado com sucesso.[/bold green]")
                 #*editar pratos

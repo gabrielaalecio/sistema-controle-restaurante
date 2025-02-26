@@ -53,5 +53,5 @@ def tem_pratos(lista):
 def verificar_nome(nome):
     return bool(re.fullmatch(r"[A-Za-zÀ-ÖØ-öø-ÿ ]+", nome))
 
-def verificar_preco(preco):
-    return bool(re.fullmatch(r"\d+(\.\d{1,2})?", preco))
+def verificar_decimal(decimal):
+    return bool(re.fullmatch(r"\d+(\.\d{1,2})?", decimal))
