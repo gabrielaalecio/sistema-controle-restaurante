@@ -26,12 +26,12 @@ def  arquivo_post(dado):
         return None
 
 async def start(update: Update, context) -> None:
-    await update.message.reply_text(f"Olá {update.message.chat.first_name}.\nSeja bem vindo ao BUG DO SABOR, sou um chat-bot e estou aqui para te ajudar com o seu pedido!\nQualquer dúvida, digite ou clique /ajuda")
+    await update.message.reply_text(f"Olá {update.message.chat.first_name}.\nSeja bem vindo ao BUG DO SABOR, sou um chat-bot e estou aqui para te ajudar com o seu pedido!\nCaso tenha dúvidas, digite ou clique em /ajuda")
     
 async def ajuda(update: Update, context) -> None:
     await update.message.reply_text(f"""
-Sou um chat-bot que auxilia os clientes com seus pedidos, basta interagir comigo que eu ajudo no possível.
-Posso cadastrar clientes, mostrar nossos produtos, realizar pedidos entre outras coisas. Digite ou clique em /comandos para ver minhas possíveis interações.                                 
+Sou um chat-bot que auxilia os clientes com seus pedidos, basta interagir comigo que eu lhe auxilio.
+Posso cadastrar clientes, mostrar nossos produtos, realizar pedidos, entre outras coisas. Digite ou clique em /comandos para ver minhas possíveis interações.                                 
 """)
 
 async def echo(update: Update, context) -> None:
@@ -66,6 +66,7 @@ async def echo(update: Update, context) -> None:
             </body>
             </html>
             """
+            
 
             enviar_email(mensagem, titulo, corpo)
             return None
@@ -86,7 +87,7 @@ async def echo(update: Update, context) -> None:
 
         elif estado == "nome":
             if validar.string_vazia(mensagem):
-                await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
+                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None                
 
             cadastro_estado[user_id]["nome"] = mensagem.upper()
@@ -110,7 +111,7 @@ async def echo(update: Update, context) -> None:
 
         elif estado == "endereco_cep":
             if validar.string_vazia(mensagem):
-                await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
+                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
             cadastro_estado[user_id]["endereco"]=({"cep":mensagem})
             cadastro_estado[user_id]["estado"] = "endereco_bairro"
@@ -119,7 +120,7 @@ async def echo(update: Update, context) -> None:
 
         elif estado == "endereco_bairro":
             if validar.string_vazia(mensagem):
-                await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
+                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
             cadastro_estado[user_id]["endereco"].update({"bairro":mensagem.upper()})
             cadastro_estado[user_id]["estado"] = "endereco_rua"
@@ -128,7 +129,7 @@ async def echo(update: Update, context) -> None:
 
         elif estado == "endereco_rua":
             if validar.string_vazia(mensagem):
-                await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
+                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
             cadastro_estado[user_id]["endereco"].update({"rua":mensagem.upper()})
             cadastro_estado[user_id]["estado"] = "endereco_num"
@@ -137,7 +138,7 @@ async def echo(update: Update, context) -> None:
 
         elif estado == "endereco_num":
             if validar.string_vazia(mensagem):
-                await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
+                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
             cadastro_estado[user_id]["endereco"].update({"numero":mensagem})
             cadastro_estado[user_id]["estado"] = "endereco_complemento"
@@ -146,7 +147,7 @@ async def echo(update: Update, context) -> None:
 
         elif estado == "endereco_complemento":
             if validar.string_vazia(mensagem):
-                await update.message.reply_text("Informação necessária! não pode deixar em branco! digite novamente ou utilize /cancelar para cancelar o cadastro.")
+                await update.message.reply_text("Informação necessária! Não deixe em branco! Digite novamente ou utilize /cancelar para cancelar o cadastro.")
                 return None 
             cadastro_estado[user_id]["endereco"].update({"complemento":mensagem.upper()})
             cadastro_estado[user_id]["estado"] = "confirmar"
@@ -175,7 +176,7 @@ async def echo(update: Update, context) -> None:
             return None
 
 
-    await update.message.reply_text(f"Olá, não entendi oque você disse. Use /ajuda ou /comandos para eu poder melhor te auxiliar",reply_to_message_id=update.message.message_id)
+    await update.message.reply_text(f"Olá, não entendi o que você disse. Use /ajuda ou /comandos para eu poder lhe auxiliar",reply_to_message_id=update.message.message_id)
 
 async def comandos(update: Update, context) -> None:
     await update.message.reply_text(f"""
@@ -192,17 +193,16 @@ Estes são os comandos (digite ou clique):
 async def button_callback(update: Update, context: CallbackContext) -> None:
 
     query = update.callback_query  
-    user_id = update.callback_query.from_user.id
+    user_id = query.from_user.id
     await query.answer()  # Confirma o recebimento para evitar carregamento infinito
 
-    new_text = ""
-    if query.data == f"cadastro_{user_id}":
-        new_text = "Você escolheu: Sim ✅ para o cadastro"
+    if query.data == f"confirmar_{user_id}":
+        new_text = "✅ Pedido confirmado! Seu cadastro foi salvo."
         arquivo_post(cadastro_estado[user_id]) #salvo o cadastro caso o usuario queira
         del cadastro_estado[user_id]
 
-    elif query.data == f"cadastro_{user_id}":
-        new_text = "Você escolheu: Não ❌ para o cadastro"
+    elif query.data == f"cancelar_{user_id}":
+        new_text = "❌ Cadastro cancelado. Seus dados foram descartados."
         del cadastro_estado[user_id]
 
     # ⚡️ Edita a mensagem original para remover os botões e mostrar a escolha
@@ -212,7 +212,7 @@ async def cadastro(update: Update, context) -> None:
     user_id = update.message.from_user.id
     dados = arquivo_get()
     if user_id in dados:
-        await update.message.reply_text("Você ja é um de nossos clientes cadastrados.\nCaso deseja cancelar o seu cadastro, digite ou clique em /cancelar_cadastro.")
+        await update.message.reply_text("Você ja é um de nossos clientes cadastrados.\nCaso queira cancelar o seu cadastro, digite ou clique em /cancelar_cadastro.")
 
     
     cadastro_estado[user_id] = {"estado": "email"}

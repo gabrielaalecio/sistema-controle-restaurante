@@ -13,6 +13,8 @@ def enviar_email(destinatario, assunto, corpo):
     msg["Subject"] = assunto
     msg.attach(MIMEText(corpo, "plain"))
 
+    msg.add_alternative(corpo, subtype='html')
+
     try:
         contexto = ssl.create_default_context()
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as server:
