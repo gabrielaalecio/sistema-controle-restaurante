@@ -254,7 +254,15 @@ async def cadastro(update: Update, context) -> None:
     cadastro_estado[user_id]["id"] = user_id
     await update.message.reply_text("Digite seu e-mail:")
 
+async def consultar_produtos(update: Update, context) -> None:
+    with open(file_pratos,"r") as arquivo:
+        pratos = json.load(arquivo)
 
+    for prato in pratos:
+        await update.message.reply_photo(
+        photo=prato["img"],  
+        caption=f"Nome: {prato["nome"]}\nDescrição: {prato["descricao"]}\nPreço: {prato["preco"]}\nTempo de preparo: {prato["tempo"]}" 
+        )
     
 file = 'bot_telegram/clientes.json'
 file_pratos = 'terminal/pratos.json'
@@ -294,6 +302,7 @@ def main():
  # Registra os handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("ajuda", ajuda))
+    application.add_handler(CommandHandler("consultar_produtos", consultar_produtos))
     application.add_handler(CommandHandler("comandos", comandos))
     application.add_handler(CommandHandler("cadastro", cadastro))
     application.add_handler(CommandHandler("cancelar_cadastro", cancelar_cadastro))
