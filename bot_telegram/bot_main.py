@@ -199,38 +199,6 @@ async def echo(update: Update, context) -> None:
             return None
     await update.message.reply_text(f"Olá, não entendi o que você disse. Use /ajuda ou /comandos para eu poder lhe auxiliar",reply_to_message_id=update.message.message_id)
 
-async def comandos(update: Update, context) -> None:
-    await update.message.reply_text(f"""
-Estes são os comandos (digite ou clique):
-
-/realizar_pedido: 
-/menu : 
-/cadastro : Para clientes que desejam ter vínculo e comprar nossos produtos
-/cancelar_cadastro : Para clientes que iniciaram o cadastro mas desejam cancelar.
-/cancelar_cliente : Para clientes cadastrados que desejam cancelar o vínculo.
-/avaliar : Avalia nosso atendimento e produtos por meio de uma mensagem.
-/comandos : Mostra todos os comandos possíveis.
-/ajuda : Explica como o bot funciona de maneira simples.
-""")
-
-async def button_callback(update: Update, context: CallbackContext) -> None:
-
-    query = update.callback_query  
-    user_id = str(query.from_user.id)
-    await query.answer()  # Confirma o recebimento para evitar carregamento infinito
-
-    if query.data == f"confirmar_{user_id}":
-        new_text = "✅ Cadastro confirmado! Seu cadastro foi salvo."
-        del cadastro_estado[user_id]["estado"]
-        arquivo_post(cadastro_estado[user_id]) #salvo o cadastro caso o usuario queira
-        del cadastro_estado[user_id]
-
-    elif query.data == f"cancelar_{user_id}":
-        new_text = "❌ Cadastro cancelado. Seus dados foram descartados."
-        del cadastro_estado[user_id]
-
-    #Edita a mensagem original para remover os botões e mostrar a escolha
-    await query.message.edit_text(new_text)
 
 async def cancelar_cliente(update: Update, context) -> None:
     user_id = str(update.message.from_user.id)
@@ -254,14 +222,16 @@ async def cadastro(update: Update, context) -> None:
     cadastro_estado[user_id]["id"] = user_id
     await update.message.reply_text("Digite seu e-mail:")
 
-pedidos = {} 
 
 async def consultar_produtos(update: Update, context) -> None:
     with open(file_pratos,"r") as arquivo:
         pratos = json.load(arquivo)
 
     for prato in pratos:
-        keyboard = [[InlineKeyboardButton("➕ Adicionar à Sacola", callback_data=f"add_{prato['nome']}")]]
+        keyboard = [[
+            InlineKeyboardButton("➕ Adicionar à Sacola", callback_data=f"add_{prato['nome']}"),
+            InlineKeyboardButton("➖ Remover da Sacola", callback_data=f"rem_{prato['nome']}")
+        ]]
         
         await update.message.reply_photo(
             photo=prato["img"],  
@@ -269,51 +239,29 @@ async def consultar_produtos(update: Update, context) -> None:
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
-
-    keyboard_ver_carrinho = [[InlineKeyboardButton("🛒 Ver Carrinho", callback_data="ver_carrinho")]]
     
-    await update.message.reply_text("🛍 Para ver seus itens, clique abaixo:", 
-                                    reply_markup=InlineKeyboardMarkup(keyboard_ver_carrinho))
-
+    await update.message.reply_text("🛒 Use /ver_carrinho para conferir ou utilize /limpar_carrinho para deixar o carrinho vazio.")
     
 file = 'bot_telegram/clientes.json'
 file_pratos = 'terminal/pratos.json'
 
-async def add_to_cart(update: Update, context: CallbackContext) -> None:
-    """Adiciona um item à sacola do usuário."""
-    query = update.callback_query
-    item = query.data.split("_")[1]  # Obtém o nome do produto do callback_data
-    user_id = query.from_user.id
+async def ver_carrinho(update: Update, context) -> None:
+    user_id = str(update.message.from_user.id)
+    mensagem_responder = update.message
 
-    # Verifica se o usuário já tem um carrinho
-    if user_id not in pedidos:
-        pedidos[user_id] = {}
-
-    # Adiciona o item ao carrinho
-    if item in pedidos[user_id]:
-        pedidos[user_id][item] += 1
-    else:
-        pedidos[user_id][item] = 1
-
-    await query.answer(f"{item} adicionado à sacola! ✅")
-    await query.message.reply_text(f"🛍 {item} foi adicionado ao carrinho! Use /ver_carrinho para conferir.")
-
-async def ver_carrinho(update: Update, context: CallbackContext) -> None:
-    """Mostra os itens no carrinho e o total."""
-    query = update.callback_query
-    user_id = query.from_user.id
-
-    if user_id not in pedidos or not pedidos[user_id]:
-        await query.answer("Seu carrinho está vazio! 🛒")
-        await query.message.reply_text("Seu carrinho está vazio! Adicione itens com /menu.")
+    # Verifica se o carrinho está vazio
+    if user_id not in pedidos or not pedidos[user_id]:  
+        await mensagem_responder.reply_text("🛒 Seu carrinho está vazio! Use /menu para adicionar itens.")
         return
 
+    # Monta a lista de produtos no carrinho
     carrinho_text = "🛍 *Seu Carrinho:*\n"
     total = 0
+
     with open(file_pratos, "r") as arquivo:
         pratos = json.load(arquivo)
 
-    precos = {prato["nome"]: float(prato["preco"]) for prato in pratos}  # Garante que os preços são numéricos
+    precos = {prato["nome"]: float(prato["preco"]) for prato in pratos}
 
     for item, qtd in pedidos[user_id].items():
         preco = precos.get(item, 0) * qtd
@@ -322,19 +270,109 @@ async def ver_carrinho(update: Update, context: CallbackContext) -> None:
 
     carrinho_text += f"\n💰 *Total: R${total:.2f}*"
 
-    keyboard = [[InlineKeyboardButton("🛑 Finalizar Pedido", callback_data="finalizar_pedido")]]
-    
-    await query.message.reply_text(carrinho_text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
+    keyboard = [[
+        InlineKeyboardButton("✅ Confirmar Pedido", callback_data="confirmar_pedido"),
+        InlineKeyboardButton("❌ Cancelar Pedido", callback_data="cancelar_pedido")
+    ]]
 
-async def button_handler(update: Update, context: CallbackContext) -> None:
-    """Gerencia os botões clicados pelo usuário."""
+    await mensagem_responder.reply_text(carrinho_text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def limpar_carrinho(update: Update, context) -> None:
+    user_id = str(update.message.from_user.id)
+    if user_id in pedidos:
+        del pedidos[user_id]
+        await update.message.reply_text("🛒 Carrinho limpo!")
+        return None
+    await update.message.reply_text("🛒 Você não possui carrinho!")
+
+
+async def callback_handler(update: Update, context: CallbackContext) -> None:
+    """Gerencia todas as interações de botões no Telegram."""
     query = update.callback_query
     data = query.data
+    user_id = str(query.from_user.id)
 
-    if data.startswith("add_"):
-        await add_to_cart(update, context)
-    elif data == "ver_carrinho":
-        await ver_carrinho(update, context)
+    await query.answer()  # Confirma o recebimento para evitar carregamento infinito
+
+    # 📌 Confirmação de cadastro
+    if data == f"confirmar_{user_id}":
+        new_text = "✅ Cadastro confirmado! Seu cadastro foi salvo."
+        del cadastro_estado[user_id]["estado"]
+        arquivo_post(cadastro_estado[user_id])  # Salva o cadastro
+        del cadastro_estado[user_id]
+
+    elif data == f"cancelar_{user_id}":
+        new_text = "❌ Cadastro cancelado. Seus dados foram descartados."
+        del cadastro_estado[user_id]
+
+    # 📌 Adicionar item ao carrinho
+    elif data.startswith("add_"):
+        item = data.split("_", 1)[1]  # Pega o nome do prato corretamente
+        if user_id not in pedidos:
+            pedidos[user_id] = {}
+        if item in pedidos[user_id]:
+            pedidos[user_id][item] += 1
+        else:
+            pedidos[user_id][item] = 1
+        print(f"Pedidos: {pedidos[user_id]}")
+        await query.answer(f"{item} adicionado à sacola! ✅")
+        await query.message.reply_text(f"🛍 {item} foi adicionado ao carrinho!\nUse /ver_carrinho para conferir ou utilize /limpar_carrinho para deixar o carrinho vazio.")
+
+    elif data.startswith("rem_"):
+        item = data.split("_", 1)[1]  # Pega o nome do prato corretamente
+        if user_id in pedidos and item in pedidos[user_id]:
+            if pedidos[user_id][item] > 1:
+                pedidos[user_id][item] -= 1
+            else:
+                del pedidos[user_id][item]
+            print(f"Pedidos após remoção: {pedidos[user_id]}")
+            await query.answer(f"{item} removido da sacola! ✅")
+            await query.message.reply_text(f"🛍 {item} foi removido do carrinho!\nUse /ver_carrinho para conferir ou utilize /limpar_carrinho para deixar o carrinho vazio.")
+        else:
+            await query.answer(f"{item} não está no carrinho!")
+            await query.message.reply_text(f"🛍 {item} não foi encontrado no carrinho!")
+
+
+    # 📌 Finalizar Pedido
+    elif data == "confirmar_pedido":
+        if cliente_existe(user_id):
+            if user_id in pedidos and pedidos[user_id]:
+                await query.message.reply_text("✅ Pedido Confirmado! Acompanhe o status pelo chat.")
+                del pedidos[user_id]
+                #confirmação de pedido, falta mais coisas aqui ///////////////////////////////////////////////////////////////////////////////////////////////////
+            else:
+                await query.message.reply_text("Seu carrinho está vazio! 🛒")
+        else:
+            await query.message.reply_text("❌ Você não possui cadastro como cliente! utilize /cadastro para se cadastrar e poder comprar nossos produtos.")
+
+    elif data == "cancelar_pedido":
+        if user_id in pedidos and pedidos[user_id]:
+            await query.message.reply_text("❌ Pedido cancelado!")
+            del pedidos[user_id]
+        else:
+            await query.message.reply_text("Seu carrinho está vazio! 🛒")
+
+
+    # Edita a mensagem original para remover os botões (caso seja um cadastro)
+    if "confirmar" in data or "cancelar" in data:
+        await query.message.edit_text(new_text)
+
+
+async def comandos(update: Update, context) -> None:
+    await update.message.reply_text(f"""
+Estes são os comandos (digite ou clique):
+
+/menu : Mostra o cardápio para, mas apenas clientes cadastrados podem comprar.
+/ver_carrinho : Mostra o carrinho.
+/limpar_carrinho : Limpa todos os produtos no carrinho.
+/cadastro : Para clientes que desejam ter vínculo e comprar nossos produtos.
+/cancelar_cadastro : Para clientes que iniciaram o cadastro mas desejam cancelar.
+/cancelar_cliente : Para clientes cadastrados que desejam cancelar o vínculo.
+/avaliar : Avalia nosso atendimento e produtos por meio de uma mensagem.
+/comandos : Mostra todos os comandos possíveis.
+/ajuda : Explica como o bot funciona de maneira simples.
+""")
+    
 
 try:
     with open(file, "r") as arquivo:
@@ -361,14 +399,14 @@ except json.JSONDecodeError:
         json.dump(clientes, arquivo)
 
 cadastro_estado = {} #guarda a informação sobre qual etapa de cadastro o  usuário se encontra
+pedidos = {}
 
 # Configuração e execução do bot
 def main():
- # Insira o token do seu bot aqui
     token = "7679897120:AAHO9LD6pfchrKJ8RhVVVHmgpT7dlVLbbLA"
- # Cria a aplicação
     application = Application.builder().token(token).build()
- # Registra os handlers
+
+    #  Registrando comandos
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("ajuda", ajuda))
     application.add_handler(CommandHandler("menu", consultar_produtos))
@@ -377,12 +415,14 @@ def main():
     application.add_handler(CommandHandler("cancelar_cadastro", cancelar_cadastro))
     application.add_handler(CommandHandler("cancelar_cliente", cancelar_cliente))
     application.add_handler(CommandHandler("ver_carrinho", ver_carrinho))
-    application.add_handler(MessageHandler(filters.TEXT, echo)) 
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(CallbackQueryHandler(button_handler))
-    application.add_handler(CallbackQueryHandler(ver_carrinho, pattern="^ver_carrinho$"))
+    application.add_handler(CommandHandler("limpar_carrinho", limpar_carrinho))
 
- # Inicia o bot
+    #  Handlers de mensagens
+    application.add_handler(MessageHandler(filters.TEXT, echo))
+
+    #  Handler para botões
+    application.add_handler(CallbackQueryHandler(callback_handler))
+
     print("Bot está rodando...")
     application.run_polling()
 main()
