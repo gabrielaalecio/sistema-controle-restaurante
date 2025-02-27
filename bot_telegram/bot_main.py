@@ -204,7 +204,7 @@ async def comandos(update: Update, context) -> None:
 Estes são os comandos (digite ou clique):
 
 /realizar_pedido: 
-/consultar_produtos : 
+/menu : 
 /cadastro : Para clientes que desejam ter vínculo e comprar nossos produtos
 /cancelar_cadastro : Para clientes que iniciaram o cadastro mas desejam cancelar.
 /cancelar_cliente : Para clientes cadastrados que desejam cancelar o vínculo.
@@ -254,18 +254,87 @@ async def cadastro(update: Update, context) -> None:
     cadastro_estado[user_id]["id"] = user_id
     await update.message.reply_text("Digite seu e-mail:")
 
+pedidos = {} 
+
 async def consultar_produtos(update: Update, context) -> None:
     with open(file_pratos,"r") as arquivo:
         pratos = json.load(arquivo)
 
     for prato in pratos:
+        keyboard = [[InlineKeyboardButton("➕ Adicionar à Sacola", callback_data=f"add_{prato['nome']}")]]
+        
         await update.message.reply_photo(
-        photo=prato["img"],  
-        caption=f"Nome: {prato["nome"]}\nDescrição: {prato["descricao"]}\nPreço: {prato["preco"]}\nTempo de preparo: {prato["tempo"]}" 
+            photo=prato["img"],  
+            caption=f"*🍽 Nome:* {prato['nome']}\n📖 *Descrição:* {prato['descricao']}\n💰 *Preço:* R${float(prato['preco']):.2f}\n⏳ *Tempo de preparo:* {prato['tempo']} min",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
+
+    keyboard_ver_carrinho = [[InlineKeyboardButton("🛒 Ver Carrinho", callback_data="ver_carrinho")]]
+    
+    await update.message.reply_text("🛍 Para ver seus itens, clique abaixo:", 
+                                    reply_markup=InlineKeyboardMarkup(keyboard_ver_carrinho))
+
     
 file = 'bot_telegram/clientes.json'
 file_pratos = 'terminal/pratos.json'
+
+async def add_to_cart(update: Update, context: CallbackContext) -> None:
+    """Adiciona um item à sacola do usuário."""
+    query = update.callback_query
+    item = query.data.split("_")[1]  # Obtém o nome do produto do callback_data
+    user_id = query.from_user.id
+
+    # Verifica se o usuário já tem um carrinho
+    if user_id not in pedidos:
+        pedidos[user_id] = {}
+
+    # Adiciona o item ao carrinho
+    if item in pedidos[user_id]:
+        pedidos[user_id][item] += 1
+    else:
+        pedidos[user_id][item] = 1
+
+    await query.answer(f"{item} adicionado à sacola! ✅")
+    await query.message.reply_text(f"🛍 {item} foi adicionado ao carrinho! Use /ver_carrinho para conferir.")
+
+async def ver_carrinho(update: Update, context: CallbackContext) -> None:
+    """Mostra os itens no carrinho e o total."""
+    query = update.callback_query
+    user_id = query.from_user.id
+
+    if user_id not in pedidos or not pedidos[user_id]:
+        await query.answer("Seu carrinho está vazio! 🛒")
+        await query.message.reply_text("Seu carrinho está vazio! Adicione itens com /menu.")
+        return
+
+    carrinho_text = "🛍 *Seu Carrinho:*\n"
+    total = 0
+    with open(file_pratos, "r") as arquivo:
+        pratos = json.load(arquivo)
+
+    precos = {prato["nome"]: float(prato["preco"]) for prato in pratos}  # Garante que os preços são numéricos
+
+    for item, qtd in pedidos[user_id].items():
+        preco = precos.get(item, 0) * qtd
+        total += preco
+        carrinho_text += f"• {item} x{qtd} - R${preco:.2f}\n"
+
+    carrinho_text += f"\n💰 *Total: R${total:.2f}*"
+
+    keyboard = [[InlineKeyboardButton("🛑 Finalizar Pedido", callback_data="finalizar_pedido")]]
+    
+    await query.message.reply_text(carrinho_text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def button_handler(update: Update, context: CallbackContext) -> None:
+    """Gerencia os botões clicados pelo usuário."""
+    query = update.callback_query
+    data = query.data
+
+    if data.startswith("add_"):
+        await add_to_cart(update, context)
+    elif data == "ver_carrinho":
+        await ver_carrinho(update, context)
 
 try:
     with open(file, "r") as arquivo:
@@ -302,13 +371,16 @@ def main():
  # Registra os handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("ajuda", ajuda))
-    application.add_handler(CommandHandler("consultar_produtos", consultar_produtos))
+    application.add_handler(CommandHandler("menu", consultar_produtos))
     application.add_handler(CommandHandler("comandos", comandos))
     application.add_handler(CommandHandler("cadastro", cadastro))
     application.add_handler(CommandHandler("cancelar_cadastro", cancelar_cadastro))
     application.add_handler(CommandHandler("cancelar_cliente", cancelar_cliente))
+    application.add_handler(CommandHandler("ver_carrinho", ver_carrinho))
     application.add_handler(MessageHandler(filters.TEXT, echo)) 
     application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(CallbackQueryHandler(ver_carrinho, pattern="^ver_carrinho$"))
 
  # Inicia o bot
     print("Bot está rodando...")
