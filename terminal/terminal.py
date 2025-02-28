@@ -41,7 +41,7 @@ def main():
                     except:
                         console.print("[bold red]Imagem não encontrada![/bold red]")
                         break
-                    lista_pratos.append(criar_prato(nome, descricao, tag, preco, tempo_preparo, img))
+                    lista_pratos.append(criar_prato(nome, descricao, preco, tempo_preparo, img))
                     console.print("[bold green]Prato criado com sucesso.[/bold green]")
                 #*editar pratos
                 case 2:
