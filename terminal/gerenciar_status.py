@@ -5,15 +5,22 @@ import json
 
 console = Console()
 
-def gerenciar_status(lista_pedidos, op):
+def gerenciar_status(lista_pedidos, num_pedido, op):
+    num_pedido = num_pedido -1
     match op:
-        case 1: #!Em preparo
-            return
-        case 2: #!Pronto
-            return
-        case 3: #!Entregue
-            return
-    return
+        case 1: #!Confirmado
+            lista_pedidos[num_pedido]['status'] = 'Confirmado'
+            return True
+        case 2: #!Em preparo
+            lista_pedidos[num_pedido]['status'] = 'Em preparo'
+            return True
+        case 3: #!Pronto
+            lista_pedidos[num_pedido]['status'] = 'Pronto'
+            return True
+        case 4: #!Entregue
+            lista_pedidos[num_pedido]['status'] = 'Entrege'
+            return True
+    return False
 
 def mostrar_pedidos(lista_pedidos):
     if len(lista_pedidos) > 0:
