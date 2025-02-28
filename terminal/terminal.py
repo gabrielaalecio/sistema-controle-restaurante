@@ -88,6 +88,9 @@ def main():
                         console.print("[bold red]Erro ao enviar email.[/bold red]")
                 #*sair
                 case 5:
+                    salvar_dados(lista_pratos, arquivo)
+                    salvar_dados(lista_pedidos, arquivo_pedidos)
+                    os.system("cls")
                     return
                 case _:
                     console.print("[bold red]Selecione uma opção válida![/bold red]")
