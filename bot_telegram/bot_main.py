@@ -351,7 +351,7 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
                     pedidos = []
                 for produto, qtd in carrinho[user_id].items():
                     preco = buscar_prato_preco(produto, lista_pratos)
-                    preco_total = preco_total + (preco * qtd)
+                    preco_total = preco_total + (float(preco) * qtd)
                     lista_produtos.append({'nome_produto': produto, 'quantidade': qtd, 'preco': preco})
                 pedido = {'produtos': lista_produtos, 'id': f'{user_id}', 'status': 'Confirmado'}
                 pedidos.append(pedido)
@@ -375,6 +375,19 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
     # Edita a mensagem original para remover os botões (caso seja um cadastro)
     if "confirmar" in data or "cancelar" in data:
         await query.message.edit_text(new_text)
+
+async def status_pedidos(update: Update, context) -> None:
+    user_id = str(update.message.from_user.id)
+    try:
+        with open("pedidos.json","r") as arquivo:
+            ped = json.load(arquivo)
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Erro na abertura de arquivo")
+        return None
+    
+    for p in ped:
+        if user_id == p["id"]:
+            await update.message.reply_text(f"🟥 Status do seu pedido: {p["status"]}")
 
 def buscar_prato_preco(nome, lista):
     for prato_lista in lista:
@@ -454,6 +467,7 @@ def main():
     application.add_handler(CommandHandler("cancelar_cadastro", cancelar_cadastro))
     application.add_handler(CommandHandler("cancelar_cliente", cancelar_cliente))
     application.add_handler(CommandHandler("ver_carrinho", ver_carrinho))
+    application.add_handler(CommandHandler("status_pedidos", status_pedidos))
     application.add_handler(CommandHandler("limpar_carrinho", limpar_carrinho))
 
     #  Handlers de mensagens
