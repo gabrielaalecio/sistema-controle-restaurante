@@ -346,7 +346,7 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
                     pedidos = []
                 for produto, qtd in carrinho[user_id].items():
                     lista_produtos.append({'nome_produto': produto, 'quantidade': qtd})
-                pedido = {'produtos': f'{lista_produtos}', 'id': f'{user_id}', 'status': 'Confirmado'}
+                pedido = {'produtos': {lista_produtos}, 'id': f'{user_id}', 'status': 'Confirmado'}
                 pedidos.append(pedido)
                 with open("pedidos.json", "w") as arquivo:
                     json.dump(pedidos, arquivo)
