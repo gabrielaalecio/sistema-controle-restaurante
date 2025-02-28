@@ -343,6 +343,7 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
                 await query.message.reply_text("✅ Pedido Confirmado! Acompanhe o status pelo chat.")
                 lista_pratos = carregar_dados('terminal/pratos.json')
                 lista_produtos = []
+                preco_total = 0
                 preco = ''
                 try:
                     with open("pedidos.json", "r") as arquivo:
@@ -351,12 +352,13 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
                     pedidos = []
                 for produto, qtd in carrinho[user_id].items():
                     preco = buscar_prato_preco(produto, lista_pratos)
+                    preco_total = preco_total + (preco * qtd)
                     lista_produtos.append({'nome_produto': produto, 'quantidade': qtd, 'preco': preco})
                 pedido = {'produtos': lista_produtos, 'id': f'{user_id}', 'status': 'Confirmado'}
                 pedidos.append(pedido)
                 with open("pedidos.json", "w") as arquivo:
                     json.dump(pedidos, arquivo)
-                #!gravar no relatório
+                vendas(preco_total, user_id)
                 del carrinho[user_id]
             else:
                 await query.message.reply_text("Seu carrinho está vazio! 🛒")
@@ -393,38 +395,20 @@ Estes são os comandos (digite ou clique):
     
 caminho = os.path.abspath(os.path.dirname('pratos.json'))
 
-def calculo_total(pedidos):
-    total = 0
-    with open(caminho, "r") as arquivo:
-        pratos = json.load(arquivo)
-        pedido = list(pedidos.keys())
-        for i in range(0,len(pedido)):
-            for j in range(0,len(pratos)):
-                if i == pratos.nome:
-                    total+=pratos.preco * pedidos[i]
-    return total
-          
-def vendas(pedidos, user_id, pedido):
-    tamanho = len(pedidos)
+def vendas(preco_total, user_id):
     arquivo = Workbook()
     planilha = arquivo.active
     planilha.title = "Vendas"
     
     planilha.cell(row = 1, column = 1,value = "ID do Usuário")
-    planilha.cell(row = 1, column = 2,value = "Total de Vendas")
-    
-    linha = 2
-    while tamanho > 0:
-        planilha.cell(row = linha, column = 1,value = user_id)
-        planilha.cell(row = linha, column = 2,value = calculo_total(pedido))
-        linha += 1
-        tamanho -= 1  
+    planilha.cell(row = 1, column = 2,value = "Total da Venda")
+    planilha.cell(row = 2, column = 1,value = user_id)
+    planilha.cell(row = 2, column = 2,value = preco_total)
         
     arquivo = arquivo.save('vendas.xlsx')
 
     return arquivo
     
-
 try:
     with open(file, "r") as arquivo:
         conteudo = arquivo.read().strip()

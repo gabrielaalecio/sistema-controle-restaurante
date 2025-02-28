@@ -1,12 +1,11 @@
 from fun_pratos import *
+from enviar_email import *
 from gerenciar_status import *
 from database import *
 from rich.panel import Panel
 from rich.console import Console
 from time import sleep
 import os
-from bot_telegram.enviar_email import enviar_email
-from bot_telegram.bot_main import vendas
 
 console = Console()
 
@@ -67,11 +66,15 @@ def main():
                     return
                 #*Emitir relatório
                 case 4:
-                    enviar_email("bugdosabor@gmail.com", "Relatório de Vendas", "Segue relatório via anexo", vendas())
-                    return
+                    if enviar_email("bugdosabor@gmail.com", "Relatório de Vendas", "Segue relatório via anexo", 'vendas.xlsx'):
+                        console.print("[bold green]Email enviado![/bold green]")
+                    else:
+                        console.print("[bold red]Erro ao enviar email.[/bold red]")
                 #*sair
                 case 5:
                     return
+                case _:
+                    console.print("[bold red]Selecione uma opção válida![/bold red]")
             salvar_dados(lista_pratos, arquivo)
             sleep(2)
             os.system("cls")
