@@ -199,6 +199,30 @@ async def echo(update: Update, context) -> None:
 
             await update.message.reply_text("Clique em uma opção abaixo:", reply_markup=reply_markup)
             return None
+    elif avalicao[user_id]["nota"]:
+        try:
+            nota = int(update.message.text.strip())
+            if nota < 1 or nota > 5:
+                await update.message.reply_text("Nota inválida. Por favor, digite uma nota de 1 a 5.")
+                avalicao[user_id]["nota"] = False
+                return None
+        except ValueError:
+            await update.message.reply_text("Por favor, digite um número válido de 1 a 5.")
+            avalicao[user_id]["nota"] = False
+            return None
+        
+        await update.message.reply_text("Obrigado pela sua avaliação! Deixe um comentário: ")
+        avalicao[user_id] = {"comentario": True,"nota": False,"num":mensagem}
+        return None
+    
+    elif avalicao[user_id]["comentario"]:
+         await update.message.reply_text(f"Obrigado pela seu comentário!")
+         ####{avalicao[user_id]["num"]} {mensagem}
+         enviar_email("bugdosabor@gmail.com","AVALIAÇÃO",f"Comentário:\n{mensagem}")
+         del avalicao[user_id]
+         return None
+         
+
     await update.message.reply_text(f"Olá, não entendi o que você disse. Use /ajuda ou /comandos para eu poder lhe auxiliar",reply_to_message_id=update.message.message_id)
 
 
@@ -351,7 +375,7 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
                     pedidos = []
                 for produto, qtd in carrinho[user_id].items():
                     preco = buscar_prato_preco(produto, lista_pratos)
-                    preco_total = preco_total + (preco * qtd)
+                    preco_total = preco_total + (float(preco) * qtd)
                     lista_produtos.append({'nome_produto': produto, 'quantidade': qtd, 'preco': preco})
                 pedido = {'produtos': lista_produtos, 'id': f'{user_id}', 'status': 'Confirmado'}
                 pedidos.append(pedido)
@@ -376,38 +400,34 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
     if "confirmar" in data or "cancelar" in data:
         await query.message.edit_text(new_text)
 
+async def status_pedidos(update: Update, context) -> None:
+    user_id = str(update.message.from_user.id)
+    try:
+        with open("pedidos.json","r") as arquivo:
+            ped = json.load(arquivo)
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Erro na abertura de arquivo")
+        return None
+    
+    for p in ped:
+        if user_id == p["id"]:
+            await update.message.reply_text(f"🟥 Status do seu pedido: {p["status"]}")
+
 def buscar_prato_preco(nome, lista):
     for prato_lista in lista:
         if prato_lista['nome'] == nome:
             return prato_lista['preco']
     return None
 
-async def nota_avaliacao(update: Update, context: CallbackContext) -> int:
-    await update.message.reply_text("Qual a sua nota de avaliação para o nosso atendimento ? (1-5)")
-    try:
-        nota = int(update.message.text.strip())
-        if nota < 1 or nota > 5:
-            await update.message.reply_text("Nota inválida. Por favor, digite uma nota de 1 a 5.")
-            return None
-    except ValueError:
-        await update.message.reply_text("Por favor, digite um número válido de 1 a 5.")
-        return None
-
-    await update.message.reply_text("Obrigado pela sua avaliação! Deseja deixar um comentário? (S/N)")
-    return comentario_avaliacao
-
-async def comentario_avaliacao(update: Update, context: CallbackContext) -> int:
-    resposta = update.message.text.strip().upper()
-
-    if resposta == "S":
-        comentario = await update.message.reply_text("Deixe um comentário sobre o atendimento que recebeu:")
-        return comentario  
-    elif resposta == "N":
-        await update.message.reply_text("Obrigado pelo feedback!")
-        return ConversationHandler.END 
+async def nota_avaliacao(update: Update, context) -> None:
+    user_id = str(update.message.from_user.id)
+    if cliente_existe(user_id):
+        print(user_id)
+        await update.message.reply_text("Qual a sua nota de avaliação para o nosso atendimento ? (1-5)")
+        avalicao[user_id] = {"nota":True}
     else:
-        await update.message.reply_text("Opção inválida. Por favor, digite 'S' ou 'N'.")
-        return comentario_avaliacao
+        await update.message.reply_text("❌ Você não possui cadastro como cliente! utilize /cadastro para se cadastrar e poder nos avaliar.")
+
 
 async def comandos(update: Update, context) -> None:
     await update.message.reply_text(f"""
@@ -466,6 +486,7 @@ except json.JSONDecodeError:
 
 cadastro_estado = {} #guarda a informação sobre qual etapa de cadastro o  usuário se encontra
 carrinho = {}
+avalicao = {}
 
 # Configuração e execução do bot
 def main():
@@ -481,6 +502,7 @@ def main():
     application.add_handler(CommandHandler("cancelar_cadastro", cancelar_cadastro))
     application.add_handler(CommandHandler("cancelar_cliente", cancelar_cliente))
     application.add_handler(CommandHandler("ver_carrinho", ver_carrinho))
+    application.add_handler(CommandHandler("status_pedidos", status_pedidos))
     application.add_handler(CommandHandler("limpar_carrinho", limpar_carrinho))
     application.add_handler(CommandHandler("avaliar", nota_avaliacao))
 
