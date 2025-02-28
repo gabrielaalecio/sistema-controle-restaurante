@@ -1,5 +1,6 @@
 from telegram import Update,InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler,filters, CallbackContext,CallbackQueryHandler
+from openpyxl import Workbook
 import json
 from secrets import token_hex
 from enviar_email import *
@@ -389,6 +390,39 @@ Estes são os comandos (digite ou clique):
 /comandos : Mostra todos os comandos possíveis.
 /ajuda : Explica como o bot funciona de maneira simples.
 """)
+    
+caminho = os.path.abspath(os.path.dirname('pratos.json'))
+
+def calculo_total(pedidos):
+    total = 0
+    with open(caminho, "r") as arquivo:
+        pratos = json.load(arquivo)
+        pedido = list(pedidos.keys())
+        for i in range(0,len(pedido)):
+            for j in range(0,len(pratos)):
+                if i == pratos.nome:
+                    total+=pratos.preco * pedidos[i]
+    return total
+          
+def vendas(pedidos, user_id, pedido):
+    tamanho = len(pedidos)
+    arquivo = Workbook()
+    planilha = arquivo.active
+    planilha.title = "Vendas"
+    
+    planilha.cell(row = 1, column = 1,value = "ID do Usuário")
+    planilha.cell(row = 1, column = 2,value = "Total de Vendas")
+    
+    linha = 2
+    while tamanho > 0:
+        planilha.cell(row = linha, column = 1,value = user_id)
+        planilha.cell(row = linha, column = 2,value = calculo_total(pedido))
+        linha += 1
+        tamanho -= 1  
+        
+    arquivo = arquivo.save('vendas.xlsx')
+
+    return arquivo
     
 
 try:

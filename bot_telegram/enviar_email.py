@@ -1,9 +1,10 @@
 import smtplib
 import ssl
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def enviar_email(destinatario, assunto, corpo):
+def enviar_email(destinatario, assunto, corpo, anexo = None):
     remetente = "bugdosabor@gmail.com"  
     senha = "dobn vywt sqaw juuk" 
 
@@ -12,6 +13,11 @@ def enviar_email(destinatario, assunto, corpo):
     msg["To"] = destinatario
     msg["Subject"] = assunto
     msg.attach(MIMEText(corpo, "html"))
+
+    if anexo and os.path.exists(anexo):
+        with open(anexo, 'rb') as arquivo:
+            conteudo = arquivo.read()
+            msg.attach(conteudo, maintype='application', subtype='pdf', filename=os.path.basename(anexo))
 
     try:
         contexto = ssl.create_default_context()
