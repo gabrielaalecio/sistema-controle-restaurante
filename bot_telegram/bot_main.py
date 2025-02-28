@@ -343,8 +343,8 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
                         pedidos = json.load(arquivo)
                 except:
                     pedidos = []
-                for chave, qtd in carrinho.items():
-                    pedido = {'nome_produto': f'{chave}', 'quantidade': qtd,'id': f'{user_id}', 'status': 'Confirmado'}
+                for produto, qtd in carrinho[user_id].items():
+                    pedido = {'nome_produto': f'{produto}', 'quantidade': qtd,'id': f'{user_id}', 'status': 'Confirmado'}
                     pedidos.append(pedido)
                 with open("pedidos.json", "w") as arquivo:
                     json.dump(pedidos, arquivo)
