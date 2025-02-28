@@ -5,8 +5,7 @@ import json
 from secrets import token_hex
 from enviar_email import *
 import validar
-from terminal.fun_pratos import *
-from terminal.database import *
+from fun_database import *
 
 def arquivo_get():
     try:
@@ -341,7 +340,7 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
         if cliente_existe(user_id):
             if user_id in carrinho and carrinho[user_id]:
                 await query.message.reply_text("✅ Pedido Confirmado! Acompanhe o status pelo chat.")
-                lista_pratos = carregar_dados('terminal/pratos.json')
+                lista_pratos = carregar_dados(file_pratos)
                 lista_produtos = []
                 preco_total = 0
                 preco = ''
@@ -377,6 +376,11 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
     if "confirmar" in data or "cancelar" in data:
         await query.message.edit_text(new_text)
 
+def buscar_prato_preco(nome, lista):
+    for prato_lista in lista:
+        if prato_lista['nome'] == nome:
+            return prato_lista['preco']
+    return None
 
 async def comandos(update: Update, context) -> None:
     await update.message.reply_text(f"""
