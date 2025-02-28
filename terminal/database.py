@@ -1,8 +1,8 @@
 import json
 
-def salvar_dados(lista_pratos, arq):
+def salvar_dados(lista, arq):
     with open(arq, 'w') as arquivo:
-        json.dump(lista_pratos, arquivo)
+        json.dump(lista, arquivo)
 
 def carregar_dados(arq):
     try:

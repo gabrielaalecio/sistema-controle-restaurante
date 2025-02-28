@@ -1,4 +1,5 @@
 from fun_pratos import *
+from gerenciar_status import *
 from database import *
 from rich.panel import Panel
 from rich.console import Console
@@ -9,8 +10,10 @@ console = Console()
 
 def main():
     arquivo = "foto-pratos\image.png"
+    arquivo_pedidos = "pedidos.json"
     while True:
         lista_pratos = carregar_dados(arquivo)
+        lista_pedidos = carregar_dados(arquivo_pedidos)
         menu_inicial = Panel("1. Cadastrar pratos.\n2. Editar pratos.\n3. Gerenciar pedidos e status.\n4. Emitir relatórios de vendas.\n5. Sair.", title="Menu")
         console.print(menu_inicial)
         try:
@@ -42,7 +45,7 @@ def main():
                     console.print("[bold green]Prato criado com sucesso.[/bold green]")
                 #*editar pratos
                 case 2:
-                    if listar_pratos(lista_pratos): #"nome": nome, "descricao": descricao, "tag":tag, "preco": preco, "tempo": tempo, "img": imagem
+                    if listar_pratos(lista_pratos):
                         prato_indice = int(input("Digite o número do prato: ")) - 1
                         if 0 <= prato_indice <= tamanho_lista(lista_pratos):
                             menu_editar = Panel("1. Editar nome.\n2. Editar descrição.\n3. Editar Tags.\n4. Editar Preços.\n5. Editar tempo de preparo.\n6. Editar caminho da imagem.\n7. Sair.", title="Menu de Edição")
@@ -53,6 +56,12 @@ def main():
                                 console.print("[bold green]Prato editado com sucesso![/bold green]")
                 #*Gerenciar pedidos
                 case 3:
+                    if mostrar_pedidos(lista_pedidos):
+                        opcao_pedido = int(console.input("Digite o número do pedido: "))
+                        if 1 <= opcao_pedido <= len(lista_pedidos):
+                            gerenciar_status(lista_pedidos, opcao_pedido)
+                    else:
+                        console.print("[bold red]Não há pedidos em andamento.[/bold red]")
                     return
                 #*Emitir relatório
                 case 4:

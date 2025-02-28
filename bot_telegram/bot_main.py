@@ -4,6 +4,8 @@ import json
 from secrets import token_hex
 from enviar_email import *
 import validar
+from terminal.fun_pratos import *
+from terminal.database import *
 
 def arquivo_get():
     try:
@@ -338,20 +340,23 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
         if cliente_existe(user_id):
             if user_id in carrinho and carrinho[user_id]:
                 await query.message.reply_text("✅ Pedido Confirmado! Acompanhe o status pelo chat.")
+                lista_pratos = carregar_dados('terminal/pratos.json')
                 lista_produtos = []
+                preco = ''
                 try:
                     with open("pedidos.json", "r") as arquivo:
                         pedidos = json.load(arquivo)
                 except:
                     pedidos = []
                 for produto, qtd in carrinho[user_id].items():
-                    lista_produtos.append({'nome_produto': produto, 'quantidade': qtd})
+                    preco = buscar_prato_preco(produto, lista_pratos)
+                    lista_produtos.append({'nome_produto': produto, 'quantidade': qtd, 'preco': preco})
                 pedido = {'produtos': lista_produtos, 'id': f'{user_id}', 'status': 'Confirmado'}
                 pedidos.append(pedido)
                 with open("pedidos.json", "w") as arquivo:
                     json.dump(pedidos, arquivo)
+                #!gravar no relatório
                 del carrinho[user_id]
-                #confirmação de pedido, falta mais coisas aqui ///////////////////////////////////////////////////////////////////////////////////////////////////
             else:
                 await query.message.reply_text("Seu carrinho está vazio! 🛒")
         else:

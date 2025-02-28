@@ -8,10 +8,10 @@ def criar_prato(nome,descricao,tag, preco, tempo, imagem):
     prato = {"nome": nome, "descricao": descricao, "tag":tag, "preco": preco, "tempo": tempo, "img": imagem}
     return prato
 
-def buscar_prato(nome, lista): #ver como vamos usar a função para modificar
+def buscar_prato_preco(nome, lista):
     for prato_lista in lista:
         if prato_lista['nome'] == nome:
-            return prato_lista
+            return prato_lista['preco']
     return None
 
 def listar_pratos(lista):
@@ -43,7 +43,7 @@ def editar_prato(prato, opcao):
             return
         case _:
             console.print("[bold red]Digite uma opção válida![/bold red]")
-    
+
 def tamanho_lista(lista):
     return len(lista)
 
