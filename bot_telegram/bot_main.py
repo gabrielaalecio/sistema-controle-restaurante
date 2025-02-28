@@ -338,14 +338,16 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
         if cliente_existe(user_id):
             if user_id in carrinho and carrinho[user_id]:
                 await query.message.reply_text("✅ Pedido Confirmado! Acompanhe o status pelo chat.")
+                lista_produtos = []
                 try:
                     with open("pedidos.json", "r") as arquivo:
                         pedidos = json.load(arquivo)
                 except:
                     pedidos = []
                 for produto, qtd in carrinho[user_id].items():
-                    pedido = {'nome_produto': f'{produto}', 'quantidade': qtd,'id': f'{user_id}', 'status': 'Confirmado'}
-                    pedidos.append(pedido)
+                    lista_produtos.append({'nome_produto': produto, 'quantidade': qtd})
+                pedido = {'produtos': f'{lista_produtos}', 'id': f'{user_id}', 'status': 'Confirmado'}
+                pedidos.append(pedido)
                 with open("pedidos.json", "w") as arquivo:
                     json.dump(pedidos, arquivo)
                 del carrinho[user_id]
