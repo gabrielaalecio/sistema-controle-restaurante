@@ -250,7 +250,7 @@ async def ver_carrinho(update: Update, context) -> None:
     mensagem_responder = update.message
 
     # Verifica se o carrinho está vazio
-    if user_id not in pedidos or not pedidos[user_id]:  
+    if user_id not in carrinho or not carrinho[user_id]:  
         await mensagem_responder.reply_text("🛒 Seu carrinho está vazio! Use /menu para adicionar itens.")
         return
 
@@ -263,7 +263,7 @@ async def ver_carrinho(update: Update, context) -> None:
 
     precos = {prato["nome"]: float(prato["preco"]) for prato in pratos}
 
-    for item, qtd in pedidos[user_id].items():
+    for item, qtd in carrinho[user_id].items():
         preco = precos.get(item, 0) * qtd
         total += preco
         carrinho_text += f"• {item} x{qtd} - R${preco:.2f}\n"
@@ -279,8 +279,8 @@ async def ver_carrinho(update: Update, context) -> None:
 
 async def limpar_carrinho(update: Update, context) -> None:
     user_id = str(update.message.from_user.id)
-    if user_id in pedidos:
-        del pedidos[user_id]
+    if user_id in carrinho:
+        del carrinho[user_id]
         await update.message.reply_text("🛒 Carrinho limpo!")
         return None
     await update.message.reply_text("🛒 Você não possui carrinho!")
@@ -308,24 +308,24 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
     # 📌 Adicionar item ao carrinho
     elif data.startswith("add_"):
         item = data.split("_", 1)[1]  # Pega o nome do prato corretamente
-        if user_id not in pedidos:
-            pedidos[user_id] = {}
-        if item in pedidos[user_id]:
-            pedidos[user_id][item] += 1
+        if user_id not in carrinho:
+            carrinho[user_id] = {}
+        if item in carrinho[user_id]:
+            carrinho[user_id][item] += 1
         else:
-            pedidos[user_id][item] = 1
-        print(f"Pedidos: {pedidos[user_id]}")
+            carrinho[user_id][item] = 1
+        print(f"Pedidos: {carrinho[user_id]}")
         await query.answer(f"{item} adicionado à sacola! ✅")
         await query.message.reply_text(f"🛍 {item} foi adicionado ao carrinho!\nUse /ver_carrinho para conferir ou utilize /limpar_carrinho para deixar o carrinho vazio.")
 
     elif data.startswith("rem_"):
         item = data.split("_", 1)[1]  # Pega o nome do prato corretamente
-        if user_id in pedidos and item in pedidos[user_id]:
-            if pedidos[user_id][item] > 1:
-                pedidos[user_id][item] -= 1
+        if user_id in carrinho and item in carrinho[user_id]:
+            if carrinho[user_id][item] > 1:
+                carrinho[user_id][item] -= 1
             else:
-                del pedidos[user_id][item]
-            print(f"Pedidos após remoção: {pedidos[user_id]}")
+                del carrinho[user_id][item]
+            print(f"Pedidos após remoção: {carrinho[user_id]}")
             await query.answer(f"{item} removido da sacola! ✅")
             await query.message.reply_text(f"🛍 {item} foi removido do carrinho!\nUse /ver_carrinho para conferir ou utilize /limpar_carrinho para deixar o carrinho vazio.")
         else:
@@ -336,9 +336,19 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
     # 📌 Finalizar Pedido
     elif data == "confirmar_pedido":
         if cliente_existe(user_id):
-            if user_id in pedidos and pedidos[user_id]:
+            if user_id in carrinho and carrinho[user_id]:
                 await query.message.reply_text("✅ Pedido Confirmado! Acompanhe o status pelo chat.")
-                del pedidos[user_id]
+                try:
+                    with open("pedidos.json", "r") as arquivo:
+                        pedidos = json.load(arquivo)
+                except:
+                    pedidos = []
+                for chave, qtd in carrinho.items():
+                    pedido = {'nome_produto': f'{chave}', 'quantidade': qtd,'id': f'{user_id}', 'status': 'Confirmado'}
+                    pedidos.append(pedido)
+                with open("pedidos.json", "w") as arquivo:
+                    json.dump(pedidos, arquivo)
+                del carrinho[user_id]
                 #confirmação de pedido, falta mais coisas aqui ///////////////////////////////////////////////////////////////////////////////////////////////////
             else:
                 await query.message.reply_text("Seu carrinho está vazio! 🛒")
@@ -346,9 +356,9 @@ async def callback_handler(update: Update, context: CallbackContext) -> None:
             await query.message.reply_text("❌ Você não possui cadastro como cliente! utilize /cadastro para se cadastrar e poder comprar nossos produtos.")
 
     elif data == "cancelar_pedido":
-        if user_id in pedidos and pedidos[user_id]:
+        if user_id in carrinho and carrinho[user_id]:
             await query.message.reply_text("❌ Pedido cancelado!")
-            del pedidos[user_id]
+            del carrinho[user_id]
         else:
             await query.message.reply_text("Seu carrinho está vazio! 🛒")
 
@@ -399,7 +409,7 @@ except json.JSONDecodeError:
         json.dump(clientes, arquivo)
 
 cadastro_estado = {} #guarda a informação sobre qual etapa de cadastro o  usuário se encontra
-pedidos = {}
+carrinho = {}
 
 # Configuração e execução do bot
 def main():
