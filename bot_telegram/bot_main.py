@@ -1,5 +1,5 @@
 from telegram import Update,InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler,filters, CallbackContext,CallbackQueryHandler
+from telegram.ext import Application, CommandHandler, MessageHandler,filters, CallbackContext,CallbackQueryHandler, ConversationHandler
 from openpyxl import Workbook
 import json
 from secrets import token_hex
@@ -395,6 +395,33 @@ def buscar_prato_preco(nome, lista):
             return prato_lista['preco']
     return None
 
+async def nota_avaliacao(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text("Qual a sua nota de avaliação para o nosso atendimento ? (1-5)")
+    try:
+        nota = int(update.message.text.strip())
+        if nota < 1 or nota > 5:
+            await update.message.reply_text("Nota inválida. Por favor, digite uma nota de 1 a 5.")
+            return None
+    except ValueError:
+        await update.message.reply_text("Por favor, digite um número válido de 1 a 5.")
+        return None
+
+    await update.message.reply_text("Obrigado pela sua avaliação! Deseja deixar um comentário? (S/N)")
+    return comentario_avaliacao
+
+async def comentario_avaliacao(update: Update, context: CallbackContext) -> int:
+    resposta = update.message.text.strip().upper()
+
+    if resposta == "S":
+        comentario = await update.message.reply_text("Deixe um comentário sobre o atendimento que recebeu:")
+        return comentario  
+    elif resposta == "N":
+        await update.message.reply_text("Obrigado pelo feedback!")
+        return ConversationHandler.END 
+    else:
+        await update.message.reply_text("Opção inválida. Por favor, digite 'S' ou 'N'.")
+        return comentario_avaliacao
+
 async def comandos(update: Update, context) -> None:
     await update.message.reply_text(f"""
 Estes são os comandos (digite ou clique):
@@ -469,6 +496,7 @@ def main():
     application.add_handler(CommandHandler("ver_carrinho", ver_carrinho))
     application.add_handler(CommandHandler("status_pedidos", status_pedidos))
     application.add_handler(CommandHandler("limpar_carrinho", limpar_carrinho))
+    application.add_handler(CommandHandler("avaliar", nota_avaliacao))
 
     #  Handlers de mensagens
     application.add_handler(MessageHandler(filters.TEXT, echo))
