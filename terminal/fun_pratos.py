@@ -5,7 +5,7 @@ import re
 console = Console()
 
 def criar_prato(nome,descricao,tag, preco, tempo, imagem):
-    prato = {"nome": nome, "descricao": descricao, "tag":tag, "preco": preco, "tempo": tempo, "img": imagem}
+    prato = {"nome": nome, "descricao": descricao, "preco": preco, "tempo": tempo, "img": imagem}
     return prato
 
 def buscar_prato_preco(nome, lista):

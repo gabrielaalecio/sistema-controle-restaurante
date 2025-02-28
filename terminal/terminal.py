@@ -28,7 +28,6 @@ def main():
                         console.print("Nome inválido!")
                         break
                     descricao = console.input("Escreva a descrição do produto: ")
-                    tag = console.input("Categoria do prato. Separe por virgula ',' Exemplo 'massas, carnes, etc...': ")
                     preco = console.input("Preço: ")
                     if not verificar_decimal(preco):
                         console.print("Preço inválido!")
